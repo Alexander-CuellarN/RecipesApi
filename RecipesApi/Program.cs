@@ -12,6 +12,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<DbRecipiesContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("sqlCoonection")));
 
+builder.Services.AddCors(option => option.AddPolicy("myRule", 
+    options => options.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyOrigin()));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -24,7 +29,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
-
+app.UseCors("myRule");
 app.MapControllers();
 
 app.Run();

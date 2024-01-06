@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace RecipesApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/")]
     [ApiController]
     public class RecipessController : ControllerBase
     {
@@ -101,7 +101,7 @@ namespace RecipesApi.Controllers
             }
         }
 
-        [HttpPut("/{id:int}")]
+        [HttpPut("{id:int}")]
         public async Task<IActionResult> Update([FromBody] DataRecipiesDto data, int id)
         {
             try
@@ -199,7 +199,7 @@ namespace RecipesApi.Controllers
             }
         }
 
-        [HttpDelete("/{id:int}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
@@ -258,7 +258,12 @@ namespace RecipesApi.Controllers
                 };
 
                 string json = JsonSerializer.Serialize(Recipes, options);
-                return Ok(json);
+
+                return Ok(new
+                {
+                    Message = "lista de recetas",
+                    Data = json
+                });
             }
             catch (Exception ex)
             {
@@ -267,7 +272,7 @@ namespace RecipesApi.Controllers
             }
         }
 
-        [HttpGet("{id:int}/{idUser: int }")]
+        [HttpGet("{id:int}/{idUser:int}")]
         public async Task<IActionResult> GetById(int id, int idUser)
         {
             try
@@ -286,13 +291,17 @@ namespace RecipesApi.Controllers
 
                 var response = JsonSerializer.Serialize(recipe, options);
 
-                return Ok(response);
+                return Ok(new
+                {
+                    Message = "lista de recetas",
+                    Data = response
+                });
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 Response.Message = ex.Message;
-                BadRequest(Response);
+                return BadRequest(Response);
             }
         }
 

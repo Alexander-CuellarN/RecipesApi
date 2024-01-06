@@ -92,7 +92,7 @@ namespace RecipesApi.Controllers
             }
         }
 
-        [HttpPost("/Login")]
+        [HttpPost("Login")]
         public async Task<IActionResult> LogIn([FromBody] UserCredentials credentials)
         {
             try
