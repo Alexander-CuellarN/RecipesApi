@@ -250,19 +250,32 @@ namespace RecipesApi.Controllers
                 var Recipes = _recipiesContext.Recetas
                     .Include(I => I.Ingredientes)
                     .Include(p => p.Preparacions)
+                    .Include(u => u.IdusuarioNavigation)
+                    .Select(r => new
+                    {
+                        Idreceta = r.Idreceta,
+                        Nombre = r.Nombre,
+                        descripcion = r.Descripción,
+                        tiempoPreparacion = r.TiempoPreparacion,
+                        NombreUsuario = r.IdusuarioNavigation.NombreUsuario,
+                        pasos = r.Preparacions.Select(pasos => new
+                        {
+                            orden = pasos.Orden,
+                            descripcion = pasos.Descripcion
+                        }),
+                        Ingrediente = r.Ingredientes.Select(i => new
+                        {
+                            nombre = i.Nombre,
+                            cantidad = i.Cantidad
+                        })
+                    })
                     .ToList();
 
-                var options = new JsonSerializerOptions
-                {
-                    ReferenceHandler = ReferenceHandler.Preserve
-                };
-
-                string json = JsonSerializer.Serialize(Recipes, options);
 
                 return Ok(new
                 {
                     Message = "lista de recetas",
-                    Data = json
+                    Data = Recipes
                 });
             }
             catch (Exception ex)
@@ -273,7 +286,7 @@ namespace RecipesApi.Controllers
         }
 
         [HttpGet("{id:int}/{idUser:int}")]
-        public async Task<IActionResult> GetById(int id, int idUser)
+        public async Task<IActionResult> GetByIdUser(int id, int idUser)
         {
             try
             {
@@ -282,19 +295,30 @@ namespace RecipesApi.Controllers
                 .Include(p => p.Preparacions)
                 .Include(c => c.Calificaciones.Where(ca => ca.Idusuario == idUser))
                 .Where(r => r.Idreceta == id)
-                .ToList();
-
-                var options = new JsonSerializerOptions()
+                .Select(r => new
                 {
-                    ReferenceHandler = ReferenceHandler.Preserve
-                };
-
-                var response = JsonSerializer.Serialize(recipe, options);
+                    Idreceta = r.Idreceta,
+                    Nombre = r.Nombre,
+                    descripcion = r.Descripción,
+                    tiempoPreparacion = r.TiempoPreparacion,
+                    NombreUsuario = r.IdusuarioNavigation.NombreUsuario,
+                    pasos = r.Preparacions.Select(pasos => new
+                    {
+                        orden = pasos.Orden,
+                        descripcion = pasos.Descripcion
+                    }),
+                    Ingrediente = r.Ingredientes.Select(i => new
+                    {
+                        nombre = i.Nombre,
+                        cantidad = i.Cantidad
+                    })
+                })
+                .ToList();
 
                 return Ok(new
                 {
                     Message = "lista de recetas",
-                    Data = response
+                    Data = recipe
                 });
 
             }

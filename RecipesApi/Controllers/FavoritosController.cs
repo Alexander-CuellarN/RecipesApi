@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RecipesApi.Models;
+using RecipesApi.Models.DTOS;
 
 namespace RecipesApi.Controllers
 {
@@ -17,12 +18,30 @@ namespace RecipesApi.Controllers
         }
 
         [HttpGet("{idUser:int}")]
-        public async Task<IActionResult> GetMyFavoriesRecipies(int id)
+        public async Task<IActionResult> GetMyFavoriesRecipies(int idUser)
         {
             try
             {
                 var favoritiesRecipes = _recipiesContext.Recetas.
-                     Include(r => r.Favoritos.Where(f => f.Idusuario == id))
+                     Include(r => r.Favoritos.Where(f => f.Idusuario == idUser))
+                     .Select(r => new
+                     {
+                         Idreceta = r.Idreceta,
+                         Nombre = r.Nombre,
+                         descripcion = r.Descripción,
+                         tiempoPreparacion = r.TiempoPreparacion,
+                         NombreUsuario = r.IdusuarioNavigation.NombreUsuario,
+                         pasos = r.Preparacions.Select(pasos => new
+                         {
+                             orden = pasos.Orden,
+                             descripcion = pasos.Descripcion
+                         }),
+                         Ingrediente = r.Ingredientes.Select(i => new
+                         {
+                             nombre = i.Nombre,
+                             cantidad = i.Cantidad
+                         })
+                     })
                      .ToList();
 
                 return Ok(new
@@ -43,27 +62,26 @@ namespace RecipesApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddFavority([FromBody] int[] data)
+        public async Task<IActionResult> AddFavority([FromBody] FavoritosDto data)
         {
             try
             {
                 var newRegister = _recipiesContext.Favoritos.Add(
                         new Favorito()
                         {
-                            Idreceta = data[0],
-                            Idusuario = data[1],
+                            Idreceta = data.IdReceta,
+                            Idusuario = data.IdUsuario,
                         }
                     );
 
-                _recipiesContext.SaveChanges();
+                await _recipiesContext.SaveChangesAsync();
 
                 return Ok(new
                 {
                     Message = "Se ha añadido con exito la receta a mis favoritos",
                     Data = new
                     {
-                        Receta = data[0],
-                        usuario = data[1],
+                        data,
                         Registro = newRegister.Entity.Idusuario
                     }
                 });
@@ -75,20 +93,61 @@ namespace RecipesApi.Controllers
             }
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> DeleteFavority([FromBody] int[] data)
+        [HttpDelete("{idUser:int}/{idRecipe:int}")]
+        public async Task<IActionResult> DeleteFavority([FromBody] int idUser, int idRecipe)
         {
             try
             {
                 var register = _recipiesContext.Favoritos
-                    .FirstOrDefault(f => f.Idreceta == data[0] && f.Idusuario == data[1]);
+                    .FirstOrDefault(f =>
+                        f.Idreceta == idRecipe
+                        && f.Idusuario == idUser
+                    );
 
                 _recipiesContext.Favoritos.Remove(register);
+                await _recipiesContext.SaveChangesAsync();
                 return NoContent();
             }
             catch (Exception ex)
             {
                 return BadRequest(new { ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("{idUser:int}/{idRecipe:int}", Name = "IsAFavoriteRecipe")]
+        public async Task<IActionResult> IsAFavoriteRecipe(int idUser, int idRecipe)
+        {
+            try
+            {
+                var favoriteRecipe = await _recipiesContext.Favoritos
+                .Where(f => f.Idusuario == idUser && f.Idreceta == idRecipe)
+                .FirstOrDefaultAsync();
+
+                if (favoriteRecipe == null)
+                {
+                    return Ok(new
+                    {
+                        message = String.Empty,
+                        data = false
+                    });
+                }
+                else
+                {
+                    return Ok(new
+                    {
+                        message = String.Empty,
+                        data = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(new
+                {
+                    message = ex.Message,
+                    data = true
+                });
             }
         }
     }
